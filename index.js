@@ -1,15 +1,19 @@
-const 
+/*jshint esversion: 6 */
+
+const
   bodyParser = require('body-parser'),
   crypto = require('crypto'),
   express = require('express'),
-  https = require('https'),  
+  https = require('https'),
   request = require('request');
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
 app.set('view engine', 'ejs');
 // Process application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({
+  extended: false
+}));
 // Process application/json
 app.use(bodyParser.json());
 
@@ -19,22 +23,22 @@ const FB_PAGE_ACCESS_TOKEN = (process.env.FB_PAGE_ACCESS_TOKEN) ? (process.env.F
 // for Facebook verification
 app.get('/webhook', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
-      req.query['hub.verify_token'] === 'my_voice_is_my_password_verify_me') {
+    req.query['hub.verify_token'] === 'my_voice_is_my_password_verify_me') {
     console.log("Validating webhook");
     res.status(200).send(req.query['hub.challenge']);
   } else {
     console.error("Failed validation. Make sure the validation tokens match.");
-    res.sendStatus(403);          
-  }  
+    res.sendStatus(403);
+  }
 });
 
 // Index route
-app.get('/', function (req, res) {
-    res.send('Hello world, I am a chat bot');
-})
+app.get('/', function(req, res) {
+  res.send('Hello world, I am a chat bot');
+});
 
 // webhook
-app.post('/webhook', function (req, res) {
+app.post('/webhook', function(req, res) {
   var data = req.body;
 
   // Make sure this is a page subscription
@@ -47,7 +51,7 @@ app.post('/webhook', function (req, res) {
 
       // Iterate over each messaging event
       pageEntry.messaging.forEach(function(messagingEvent) {
-		if (messagingEvent.message) {
+        if (messagingEvent.message) {
           receivedMessage(messagingEvent);
         } else {
           console.log("Webhook received unknown messagingEvent: ", messagingEvent);
@@ -69,7 +73,7 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  console.log("Received message for user %d and page %d at %d with message:", 
+  console.log("Received message for user %d and page %d at %d with message:",
     senderID, recipientID, timeOfMessage);
   console.log(JSON.stringify(message));
 
@@ -85,7 +89,7 @@ function receivedMessage(event) {
 
   if (isEcho) {
     // Just logging message echoes to console
-    console.log("Received echo for message %s and app %d with metadata %s", 
+    console.log("Received echo for message %s and app %d with metadata %s",
       messageId, appId, metadata);
     return;
   } else if (quickReply) {
@@ -107,26 +111,26 @@ function receivedMessage(event) {
 
       case 'quick reply':
         sendQuickReply(senderID);
-        break;        
+        break;
 
       case 'typing on':
         sendTypingOn(senderID);
-        break;        
+        break;
 
       case 'typing off':
         sendTypingOff(senderID);
-        break;        
+        break;
 
       default:
- 			 	sendInvalidMessage(senderID);
+        sendInvalidMessage(senderID);
     }
   } else if (messageAttachments) {
-  	sendInvalidMessage(senderId);
+    sendInvalidMessage(senderId);
   }
 }
 
 function sendInvalidMessage(recipientId) {
-	sendTextMessage(recipientId, "I'm not that smart yet. Send #help to learn more about my limited vocabulary");
+  sendTextMessage(recipientId, "I'm not that smart yet. Send #help to learn more about my limited vocabulary");
 }
 
 function sendTextMessage(recipientId, messageText) {
@@ -154,7 +158,7 @@ function sendButtonMessage(recipientId) {
         payload: {
           template_type: "button",
           text: "This is test text",
-          buttons:[{
+          buttons: [{
             type: "web_url",
             url: "https://www.oculus.com/en-us/rift/",
             title: "Open Web URL"
@@ -170,7 +174,7 @@ function sendButtonMessage(recipientId) {
         }
       }
     }
-  };  
+  };
 
   callSendAPI(messageData);
 }
@@ -183,23 +187,19 @@ function sendQuickReply(recipientId) {
     },
     message: {
       text: "What's your favorite movie genre?",
-      quick_replies: [
-        {
-          "content_type":"text",
-          "title":"Action",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
-        },
-        {
-          "content_type":"text",
-          "title":"Comedy",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
-        },
-        {
-          "content_type":"text",
-          "title":"Drama",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
-        }
-      ]
+      quick_replies: [{
+        "content_type": "text",
+        "title": "Action",
+        "payload": "DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
+      }, {
+        "content_type": "text",
+        "title": "Comedy",
+        "payload": "DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
+      }, {
+        "content_type": "text",
+        "title": "Drama",
+        "payload": "DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
+      }]
     }
   };
 
@@ -235,31 +235,33 @@ function sendTypingOff(recipientId) {
 function callSendAPI(messageData) {
   request({
     uri: 'https://graph.facebook.com/v2.6/me/messages',
-    qs: { access_token: FB_PAGE_ACCESS_TOKEN },
+    qs: {
+      access_token: FB_PAGE_ACCESS_TOKEN
+    },
     method: 'POST',
     json: messageData
 
-  }, function (error, response, body) {
+  }, function(error, response, body) {
     if (!error && response.statusCode == 200) {
       var recipientId = body.recipient_id;
       var messageId = body.message_id;
 
       if (messageId) {
-        console.log("Successfully sent message with id %s to recipient %s", 
+        console.log("Successfully sent message with id %s to recipient %s",
           messageId, recipientId);
       } else {
-      console.log("Successfully called Send API for recipient %s", 
-        recipientId);
+        console.log("Successfully called Send API for recipient %s",
+          recipientId);
       }
     } else {
       console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
     }
-  });  
+  });
 }
 
 // Spin up the server
 app.listen(app.get('port'), function() {
-    console.log('running on port', app.get('port'));
+  console.log('running on port', app.get('port'));
 });
 
 module.exports = app;
