@@ -104,7 +104,7 @@ function receivedMessage(event) {
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
 
-    var cleanMessageText = messageText.ToLowerCase().trim();
+    var cleanMessageText = messageText.toLowerCase().trim();
     switch (cleanMessageText) {
       case '#help':
         sendHelpMessage(senderID);
