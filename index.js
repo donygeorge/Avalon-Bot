@@ -118,7 +118,7 @@ function receivedMessage(event) {
         break;        
 
       default:
- 			 	sendInvalidMessage(senderId);
+ 			 	sendInvalidMessage(senderID);
     }
   } else if (messageAttachments) {
   	sendInvalidMessage(senderId);
