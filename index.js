@@ -100,25 +100,14 @@ function receivedMessage(event) {
   }
 
   if (messageText) {
-
     // If we receive a text message, check to see if it matches any special
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
-    switch (messageText) {
-      case 'button':
-        sendButtonMessage(senderID);
-        break;
 
-      case 'quick reply':
-        sendQuickReply(senderID);
-        break;
-
-      case 'typing on':
-        sendTypingOn(senderID);
-        break;
-
-      case 'typing off':
-        sendTypingOff(senderID);
+    var cleanMessageText = messageText.ToLowerCase().trim();
+    switch (cleanMessageText) {
+      case '#help':
+        sendHelpMessage(senderID);
         break;
 
       default:
@@ -128,6 +117,16 @@ function receivedMessage(event) {
     sendInvalidMessage(senderId);
   }
 }
+
+function sendHelpMessage(recipientId) {
+  var message = "Supported options:\n" +
+    "#create : Create a new game\n" +
+    "#join <code word> : Join the game with the matching code word\n" +
+    "#exit : Quit game \n" +
+    "#stats : Request stats";
+  sendTextMessage(recipientId, message);
+}
+
 
 function sendInvalidMessage(recipientId) {
   sendTextMessage(recipientId, "I'm not that smart yet. Send #help to learn more about my limited vocabulary");
