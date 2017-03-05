@@ -92,8 +92,6 @@ function receivedMessage(event) {
     var quickReplyPayload = quickReply.payload;
     console.log("Quick reply for message %s with payload %s",
       messageId, quickReplyPayload);
-
-    sendTextMessage(senderID, "Quick reply tapped");
     return;
   }
 
@@ -120,11 +118,15 @@ function receivedMessage(event) {
         break;        
 
       default:
-        sendTextMessage(senderID, messageText);
+ 			 	sendInvalidMessage(senderId);
     }
   } else if (messageAttachments) {
-    sendTextMessage(senderID, "Message with attachment received");
+  	sendInvalidMessage(senderId);
   }
+}
+
+function sendInvalidMessage(recipientId) {
+	sendTextMessage(recipientId, "I'm not that smart yet. Send #help to learn more about my limited vocabulary");
 }
 
 function sendTextMessage(recipientId, messageText) {
