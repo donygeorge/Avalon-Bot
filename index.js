@@ -7,6 +7,7 @@ const
   https = require('https'),
   request = require('request');
   pg = require('pg');
+  uuidGenerator = require('node-uuid');
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -17,6 +18,7 @@ app.use(bodyParser.urlencoded({
 }));
 // Process application/json
 app.use(bodyParser.json());
+pg.defaults.ssl = true;
 
 // Generate a page access token for your page from the App Dashboard
 const FB_PAGE_ACCESS_TOKEN = (process.env.FB_PAGE_ACCESS_TOKEN) ? (process.env.FB_PAGE_ACCESS_TOKEN) : config.get('pageAccessToken');
@@ -111,12 +113,42 @@ function receivedMessage(event) {
         sendHelpMessage(senderID);
         break;
 
+      case '#create':
+        createGame(senderID);
+        break;
+
       default:
         sendInvalidMessage(senderID);
     }
   } else if (messageAttachments) {
     sendInvalidMessage(senderId);
   }
+}
+
+function generateCode() {
+  var ret = Math.floor(100000 + Math.random() * 900000);
+  ret = ret.toString();
+  return ret.substring(-2);
+}
+
+function createGame(recipientId) {
+  pg.connect(process.env.DATABASE_URL, function(err, client) {
+    if (err) {
+      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
+      return;
+    }
+
+    var uuid = uuidGenerator.v4();
+    var code = generateCode();
+    client
+      .query('INSERT INTO new_games VALUES ($1, $2, $3, {$4}, current_timestamp);', [uuid, code, recipientId, recipientId], function (err, result) {
+        if (err) {
+          sendErrorMessage(recipientId, "Creating game failed with error " + err);
+          return;
+        }
+        sendTextMessage(recipientId, "Successfully created the game. Use code# " + code);
+      });
+  });
 }
 
 function sendHelpMessage(recipientId) {
@@ -128,6 +160,9 @@ function sendHelpMessage(recipientId) {
   sendTextMessage(recipientId, message);
 }
 
+function sendErrorMessage(recipientId, reason) {
+  sendTextMessage(recipientId, "I encountered an error. Reason: " + reason);
+}
 
 function sendInvalidMessage(recipientId) {
   sendTextMessage(recipientId, "I'm not that smart yet. Send #help to learn more about my limited vocabulary");
@@ -173,19 +208,6 @@ function callSendAPI(messageData) {
     }
   });
 }
-
-// Setup database
-pg.defaults.ssl = true;
-pg.connect(process.env.DATABASE_URL, function(err, client) {
-  if (err) throw err;
-  console.log('Connected to postgres! Getting schemas...');
-
-  client
-    .query('SELECT table_schema,table_name FROM information_schema.tables;')
-    .on('row', function(row) {
-      console.log(JSON.stringify(row));
-    });
-});
 
 // Spin up the server
 app.listen(app.get('port'), function() {
