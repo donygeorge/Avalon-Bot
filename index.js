@@ -174,7 +174,7 @@ function joinGame(recipientId, message) {
       sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
       return;
     }
-    client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $1 RETURNING *", [recipientId, code], function (err, result) {
+    client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recipientId, code], function (err, result) {
       if (err) {
         sendErrorMessage(recipientId, "Joining the game failed with error " + err);
         pg.end();
