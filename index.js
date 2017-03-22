@@ -108,7 +108,8 @@ function receivedMessage(event) {
     // the text we received.
 
     var cleanMessageText = messageText.toLowerCase().trim();
-    switch (cleanMessageText) {
+    var split = cleanMessageText.split(" ");
+    switch (split[0]) {
       case '#help':
         sendHelpMessage(senderID);
         break;
@@ -157,7 +158,7 @@ function createGame(recipientId) {
 }
 
 function joinGame(recipientId, message) {
-  var split = maessage.split(" ");
+  var split = message.split(" ");
   var valid = false;
   var code = null;
   if (split.length == 2) {
