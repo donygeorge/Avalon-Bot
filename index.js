@@ -162,13 +162,14 @@ function joinGame(recipientId, message) {
   var valid = false;
   var code = null;
   if (split.length == 2) {
+    code = split[1];
     if (code.length == 6) {
       code = split[1];
       valid = true;
     }
   }
   if (!valid) {
-      sendErrorMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
+      sendTextMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
       return;
   }
 
@@ -184,7 +185,7 @@ function joinGame(recipientId, message) {
         return;
       }
       if (result.rowCount === 0) {
-        sendErrorMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
+        sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
         pg.end();
         return;
       } else if (result.rowCount > 1) {
