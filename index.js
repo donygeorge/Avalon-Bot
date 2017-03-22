@@ -164,7 +164,7 @@ function joinGame(recipientId, message) {
     return;
   }
   var code = split[1];
-  if (code.length == 6) {
+  if (code.length != 6) {
     sendTextMessage(recipientId, "Invalid syntax. The code should be a 6 digit number");
     return;
   }
