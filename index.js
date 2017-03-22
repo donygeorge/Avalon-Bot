@@ -159,18 +159,14 @@ function createGame(recipientId) {
 
 function joinGame(recipientId, message) {
   var split = message.split(" ");
-  var valid = false;
-  var code = null;
-  if (split.length == 2) {
-    code = split[1];
-    if (code.length == 6) {
-      code = split[1];
-      valid = true;
-    }
+  if (split.length != 2) {
+    sendTextMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
+    return;
   }
-  if (!valid) {
-      sendTextMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
-      return;
+  varcode = split[1];
+  if (code.length == 6) {
+    sendTextMessage(recipientId, "Invalid syntax. The code should be a 6 digit number");
+    return;
   }
 
   pg.connect(process.env.DATABASE_URL, function(err, client) {
