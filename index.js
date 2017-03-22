@@ -117,6 +117,10 @@ function receivedMessage(event) {
         createGame(senderID);
         break;
 
+      case '#join':
+        joinGame(senderID, cleanMessageText);
+        break;
+
       default:
         sendInvalidMessage(senderID);
     }
@@ -140,14 +144,56 @@ function createGame(recipientId) {
 
     var uuid = uuidGenerator.v4();
     var code = generateCode();
-    client
-      .query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientId ]], function (err, result) {
-        if (err) {
-          sendErrorMessage(recipientId, "Creating game failed with error " + err);
-          return;
-        }
-        sendTextMessage(recipientId, "Successfully created the game. Use code# " + code);
-      });
+    client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientId ]], function (err, result) {
+      if (err) {
+        sendErrorMessage(recipientId, "Creating game failed with error " + err);
+        pg.end();
+        return;
+      }
+      sendTextMessage(recipientId, "Successfully created the game. Use code# " + code);
+      pg.end();
+    });
+  });
+}
+
+function joinGame(recipientId, message) {
+  var split = maessage.split(" ");
+  var valid = false;
+  var code = null;
+  if (split.length == 2) {
+    if (code.length == 6) {
+      code = split[1];
+      valid = true;
+    }
+  }
+  if (!valid) {
+      sendErrorMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
+      return;
+  }
+
+  pg.connect(process.env.DATABASE_URL, function(err, client) {
+    if (err) {
+      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
+      return;
+    }
+    client.query("SELECT * from new_games WHERE code = $1", [code], function (err, result) {
+      if (err) {
+        sendErrorMessage(recipientId, "Joining the game failed with error " + err);
+        pg.end();
+        return;
+      }
+      if (result.rowCount === 0) {
+        sendErrorMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
+        pg.end();
+        return;
+      } else if (result.rowCount > 1) {
+        sendErrorMessage(recipientId, "Something went wrong (Multiple games were found with the same code). Please contact the developer");
+        pg.end();
+        return;
+      }
+      sendTextMessage(recipientId, "Successfully joined the game");
+      pg.end();
+    });
   });
 }
 
