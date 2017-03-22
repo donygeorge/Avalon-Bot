@@ -163,7 +163,7 @@ function joinGame(recipientId, message) {
     sendTextMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
     return;
   }
-  varcode = split[1];
+  var code = split[1];
   if (code.length == 6) {
     sendTextMessage(recipientId, "Invalid syntax. The code should be a 6 digit number");
     return;
