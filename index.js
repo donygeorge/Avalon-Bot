@@ -122,6 +122,14 @@ function receivedMessage(event) {
         joinGame(senderID, cleanMessageText);
         break;
 
+      case '#create':
+        startGame(senderID);
+        break;
+
+      case '#end':
+        endGame(senderID);
+        break;
+
       default:
         sendInvalidMessage(senderID);
     }
@@ -190,7 +198,51 @@ function joinGame(recipientId, message) {
         return;
       }
       sendTextMessage(recipientId, "Successfully joined the game");
+      sendTextMessage(result.rows[0].creator_id, recipientId + " joined the game");
       pg.end();
+    });
+  });
+}
+
+function startGame(recipientId) {
+  pg.connect(process.env.DATABASE_URL, function(err, client) {
+    if (err) {
+      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
+      return;
+    }
+
+    var uuid = uuidGenerator.v4();
+    var code = generateCode();
+    client.query("SELECT * FROM new_games WHERE creator_id = $1);", [recipientId], function (err, results) {
+      if (err) {
+        sendErrorMessage(recipientId, "Starting game failed with error " + err);
+        pg.end();
+        return;
+      }
+      if (results.rows.count === 0) {
+        sendTextMessage(recipientId, "Could not find a game to start. Only creators are allowed to start games");
+        pg.end();
+        return;        
+      }
+      if (results.rows.count > 1) {
+        sendTextMessage(recipientId, "You created multiple games. Only the first game would be started");
+      }
+      var row = results.rows[0];
+      var players = row.players;
+      players.push(recipientId);
+      players = uniqueArray(players);
+      if (players.count < 5 || players.count > 10) {
+        sendTextMessage(recipientId, "Avalon needs 5-10 players. There are currently " + players.count + "  players in this game");
+        pg.end();
+        return;
+      }
+      setupGame(players);
+      client.query("DELETE FROM new_games WHERE id = $1);", [row.id], function (err, results) {
+        if (err) {
+          sendErrorMessage(recipientId, "Cleared started game failed with error " + err);
+        }
+        pg.end();
+      });
     });
   });
 }
@@ -199,8 +251,7 @@ function sendHelpMessage(recipientId) {
   var message = "Supported options:\n" +
     "#create : Create a new game\n" +
     "#join <code word> : Join the game with the matching code word\n" +
-    "#exit : Quit game \n" +
-    "#stats : Request stats";
+    "#start : Start game\n" +
   sendTextMessage(recipientId, message);
 }
 
@@ -251,6 +302,67 @@ function callSendAPI(messageData) {
       console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
     }
   });
+}
+
+function setupGame(players)
+{
+  players = shuffleArray(players);
+  var playerCount = players.count;
+  if (playerCount < 5 || playerCount > 10) {
+    // Should not happen
+    return;
+  }
+  var index = 0;
+  var role_merlin = players[index++];
+  var role_percival = players[index++];
+  var role_morgana = players[index++];
+  var role_mordred = players[index++];
+  var roles_known_to_merlin = [role_morgana];
+  var roles_known_to_percival = [role_morgana, role_merlin];
+  var roles_known_to_spies = [role_morgana, role_mordred];
+  var role_oberon = null;
+  var role_spy = null;
+  if (playerCount >= 7) {
+     role_oberon = players[index++];
+     roles_known_to_merlin.push(role_oberon);
+  }
+  if (playerCount == 10) {
+    role_spy = players[index++];
+    roles_known_to_spies.push(role_spy);
+  }
+
+  sendTextMessage(role_merlin, "The game has started.\n You are 'Merlin'.\n The known spies are " + roles_known_to_merlin);
+  sendTextMessage(role_percival, "The game has started.\n You are 'Percival'.\n" + roles_known_to_merlin + " are either 'Merlin' or 'Morgana'");
+  sendTextMessage(role_morgana, "The game has started.\n You are 'Morgana'.");
+  sendTextMessage(role_mordred, "The game has started.\n You are 'Mordred'.");
+  if (role_oberon !== null) {
+    sendTextMessage(role_oberon, "The game has started.\n You are 'Oberon'.");
+  }
+  if (role_spy !== null) {
+    sendTextMessage(role_spy, "The game has started.\n You are 'A Mininon of Mordred'.");
+  }
+  for (var spy in roles_known_to_spies) {
+    sendTextMessage(spy, "The known spies are " + roles_known_to_spies);
+  }
+  for (; index < playerCount; index++) {
+    sendTextMessage(role_spy, "The game has started.\n You are 'A Loyal Servant of Arthur'.");    
+  }
+}
+
+function uniqueArray(arr) {
+  return arr.filter(function(elem, pos) {
+    return arr.indexOf(elem) == pos;
+  });
+}
+
+function shuffleArray(array) {
+  for (var i = array.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+  }
+  return array;
 }
 
 // Spin up the server
