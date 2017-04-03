@@ -251,7 +251,7 @@ function sendHelpMessage(recipientId) {
   var message = "Supported options:\n" +
     "#create : Create a new game\n" +
     "#join <code word> : Join the game with the matching code word\n" +
-    "#start : Start game\n" +
+    "#start : Start game\n";
   sendTextMessage(recipientId, message);
 }
 
