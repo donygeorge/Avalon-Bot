@@ -122,12 +122,12 @@ function receivedMessage(event) {
         joinGame(senderID, cleanMessageText);
         break;
 
-      case '#create':
+      case '#start':
         startGame(senderID);
         break;
 
-      case '#end':
-        endGame(senderID);
+      case '#exit':
+        exitGame(senderID);
         break;
 
       default:
@@ -246,12 +246,33 @@ function startGame(recipientId) {
     });
   });
 }
+function exitGame(recipientId) {
+  pg.connect(process.env.DATABASE_URL, function(err, client) {
+    if (err) {
+      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
+      return;
+    }
+
+    var uuid = uuidGenerator.v4();
+    var code = generateCode();
+    client.query("DELETE FROM new_games WHERE creator_id = $1);", [recipientId], function (err, results) {
+      if (err) {
+        sendErrorMessage(recipientId, "Exiting game failed with error " + err);
+        pg.end();
+        return;
+      }
+      sendTextMessage(recipientId, "Exited all games that you created");
+      pg.end();
+    });
+  });
+}
 
 function sendHelpMessage(recipientId) {
   var message = "Supported options:\n" +
     "#create : Create a new game\n" +
     "#join <code word> : Join the game with the matching code word\n" +
-    "#start : Start game\n";
+    "#start : Start game\n" +
+    "#exit : Exit game";
   sendTextMessage(recipientId, message);
 }
 
