@@ -213,7 +213,7 @@ function startGame(recipientId) {
 
     var uuid = uuidGenerator.v4();
     var code = generateCode();
-    client.query("SELECT * FROM new_games WHERE creator_id = $1);", [recipientId], function (err, results) {
+    client.query("SELECT * FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
       if (err) {
         sendErrorMessage(recipientId, "Starting game failed with error " + err);
         pg.end();
@@ -255,7 +255,7 @@ function exitGame(recipientId) {
 
     var uuid = uuidGenerator.v4();
     var code = generateCode();
-    client.query("DELETE FROM new_games WHERE creator_id = $1);", [recipientId], function (err, results) {
+    client.query("DELETE FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
       if (err) {
         sendErrorMessage(recipientId, "Exiting game failed with error " + err);
         pg.end();
