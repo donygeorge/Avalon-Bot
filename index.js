@@ -237,7 +237,7 @@ function startGame(recipientId) {
         return;
       }
       setupGame(players);
-      client.query("DELETE FROM new_games WHERE id = $1);", [row.id], function (err, results) {
+      client.query("DELETE FROM new_games WHERE id = $1;", [row.id], function (err, results) {
         if (err) {
           sendErrorMessage(recipientId, "Cleared started game failed with error " + err);
         }
