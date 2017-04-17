@@ -177,6 +177,8 @@ function joinGame(recipientId, message) {
     return;
   }
 
+  // TODO: Remove
+  resolveName(recipientId);
   pg.connect(process.env.DATABASE_URL, function(err, client) {
     if (err) {
       sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
@@ -321,6 +323,20 @@ function callSendAPI(messageData) {
       }
     } else {
       console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
+    }
+  });
+}
+
+function resolveName(userID) {
+  url = "https://graph.facebook.com/v2.6/me/messages/" + userID + "?fields=first_name,last_name&access_token=" + FB_PAGE_ACCESS_TOKEN;
+  request(url, function(error, response, body) {
+    if (!error && response.statusCode == 200) {
+      var firstName = body.first_name;
+      var lastName = body.last_name;
+      var name = firstName + " " + lastName;
+      console.log("Successfully resolved name to %s", name);
+    } else {
+      console.error("Failed resolving name", response.statusCode, response.statusMessage, body.error);
     }
   });
 }
