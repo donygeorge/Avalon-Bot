@@ -443,7 +443,9 @@ function splitIdAndName(combination) {
 
 function playersFromPlayerStrings(playerStrings) {
   var ret = [];
+    console.log("AvalonLog: playerString count %d", playerStrings.length);
   for (var playerString in playerStrings) {
+    console.log("AvalonLog: playerString %s", playerString);
     var player = splitIdAndName(playerString);
     if (player !== null) {
       ret.push(player);
