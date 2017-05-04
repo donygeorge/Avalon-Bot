@@ -296,8 +296,8 @@ function listGames(recipientId) {
       }
       pg.end();
       var message = "You have 1 active game\n" +
-        "Code#:" + code + "\n" +
-        "Current players:" + nameStringFromPlayers(players);
+        "Code#: " + code + "\n" +
+        "Current players: " + nameStringFromPlayers(players);
       sendTextMessage(recipientId, message);
     });
   });
@@ -344,10 +344,9 @@ function queryOwnGames(pg, client, creatorId, callback) {
     }
     var row = results.rows[0];
     var players = row.players;
-    console.log("AvalonLog: players %s", JSON.stringify(players));
-    console.log("AvalonLog: Starting game, there are %d players", players.length);
     players = uniqueArray(players);
-    callback(row.code, players);
+    console.log("AvalonLog: There are %d unique players", players.length);
+    callback(row.code, playersFromPlayerStrings(players));
   });
 }
 
@@ -442,10 +441,10 @@ function splitIdAndName(combination) {
   return {userId : split[0], userName: split[1]};
 }
 
-function splitPlayers(combinedPlayers) {
+function playersFromPlayerStrings(playerStrings) {
   var ret = [];
-  for (var combinedPlayer in combinedPlayers) {
-    var player = splitIdAndName(combinedPlayer);
+  for (var playerString in playerStrings) {
+    var player = splitIdAndName(playerString);
     if (player !== null) {
       ret.push(player);
     }
@@ -470,9 +469,8 @@ function nameStringFromPlayers(players) {
   return ret;
 }
 
-function setupGame(combinedPlayers)
+function setupGame(players)
 {
-  var players = splitPlayers(combinedPlayers);
   players = shuffleArray(players);
   var playerCount = players.length;
   if (playerCount < 5 || playerCount > 10) {
