@@ -199,7 +199,7 @@ function createGame(recipientId) {
           return;
         }
         if (results.rowCount >= 1) {
-          sendTextMessage(recipientId, "You already have an active game. Use either #start or #exit to clear that game first before creating a new game");
+          sendTextMessage(recipientId, "You already have an active game. Use either 'start' or 'exit' to clear that game first before creating a new game");
           pg.end();
           return;
         }
@@ -384,7 +384,7 @@ function queryOwnGames(pg, client, creatorId, callback) {
 }
 
 function sendHelpMessage(recipientId) {
-  var message = "Supported options:\n\n" +
+  var message = "Supported keywords:\n\n" +
     "create : Create a new game\n" +
     "join <code word> : Join the game with the matching code word\n" +
     "start : Start game. Only the creator can start the game\n" +
