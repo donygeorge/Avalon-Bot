@@ -164,6 +164,14 @@ function switchCases(senderId, keyword, remainingMessage) {
       joinGame(senderId, remainingMessage);
       break;
 
+    case 'yolo':
+    case 'join-yolo':
+    case 'joinyolo':
+    case 'yolo-join':
+    case 'yolojoin':
+      joinGameWithCode(senderId, yolo_code);
+      break;
+
     case 'list':
       listGames(senderId);
       break;
@@ -224,7 +232,11 @@ function createGame(recipientId, code) {
             pg.end();
             return;
           }
-          sendTextMessage(recipientId, "Successfully created the game. Use code " + code);
+          if (code === yolo_code) {
+            sendTextMessage(recipientId, "Successfully a secret game. Ask participants to send 'yolo' to join this game");
+          } else {
+            sendTextMessage(recipientId, "Successfully created the game. Use code " + code);
+          }
           pg.end();
         });
       });
