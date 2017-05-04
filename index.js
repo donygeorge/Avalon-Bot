@@ -134,7 +134,7 @@ function receivedMessage(event) {
         keyword = keyword.substring(0, keyword.length - valid_suffix.length);
       }
     }
-    if (!switchCases(keyword, remainingMessage)) {
+    if (!switchCases(senderId, keyword, remainingMessage)) {
       sendInvalidMessage(senderId);
     }
   } else if (messageAttachments) {
@@ -142,7 +142,7 @@ function receivedMessage(event) {
   }
 }
 
-function switchCases(keyword, remainingMessage) {
+function switchCases(senderId, keyword, remainingMessage) {
   switch (keyword) {
     case 'help':
       sendHelpMessage(senderId);
