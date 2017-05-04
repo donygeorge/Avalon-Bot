@@ -197,7 +197,6 @@ function generateCode() {
 }
 
 function createGame(recipientId) {
-  var uuid = uuidGenerator.v4();
   var code = generateCode();
   createGame(recipientId, code);
 }
@@ -226,6 +225,7 @@ function createGame(recipientId, code) {
           return;
         }
 
+        var uuid = uuidGenerator.v4();
         client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientString ]], function (err, result) {
           if (err) {
             sendErrorMessage(recipientId, "Creating game failed with error " + err);
