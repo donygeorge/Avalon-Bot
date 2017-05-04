@@ -292,7 +292,7 @@ function startGame(recipientId) {
       if (players.length < 5 || players.length > 10) {
         var verbString = (players.length == 1) ? "is" : "are";
         var playerString = (players.length == 1) ? "player" : "players";
-        sendTextMessage(recipientId, "Avalon needs 5-10 players. There " + verbString + " currently " + players.length + "  " + playerString + " in this game");
+        sendTextMessage(recipientId, "Avalon needs 5-10 players. There " + verbString + " currently just " + players.length + "  " + playerString + " in this game");
         pg.end();
         return;
       }
@@ -398,7 +398,7 @@ function sendErrorMessage(recipientId, reason) {
 }
 
 function sendInvalidMessage(recipientId) {
-  sendTextMessage(recipientId, "Sorry, I did not follow. :(");
+  sendTextMessage(recipientId, "Sorry, I'm not sure what you are trying to say. :(");
   sendHelpMessage(recipientId);
 }
 
