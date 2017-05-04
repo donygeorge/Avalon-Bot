@@ -365,7 +365,7 @@ function combineIDAndName(userID, name) {
 }
 
 function splitIDAndName(combination) {
-  var split = message.split(split_literal);
+  var split = combination.split(split_literal);
   if (split.length != 2) {
     console.log("AvalonLog: Invalid combination to split: %s op: %s", combination, split);
     return null;
