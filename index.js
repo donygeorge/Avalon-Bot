@@ -345,7 +345,7 @@ function queryOwnGames(pg, client, creatorId, callback) {
     var row = results.rows[0];
     var players = row.players;
     players = uniqueArray(players);
-    console.log("AvalonLog: There are %d unique players", players.length);
+    console.log("AvalonLog: There are %d unique players. Players: %s", players.length, JSON.stringify(players));
     callback(row.code, playersFromPlayerStrings(players));
   });
 }
