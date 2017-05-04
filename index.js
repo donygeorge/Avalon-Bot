@@ -110,37 +110,68 @@ function receivedMessage(event) {
 
     var cleanMessageText = messageText.toLowerCase().trim();
     var split = cleanMessageText.split(" ");
-    switch (split[0]) {
-      case 'help':
-        sendHelpMessage(senderId);
-        break;
-
-      case 'create':
-        createGame(senderId);
-        break;
-
-      case 'join':
-        joinGame(senderId, cleanMessageText);
-        break;
-
-      case 'list':
-        listGames(senderId);
-        break;
-
-      case 'start':
-        startGame(senderId);
-        break;
-
-      case 'exit':
-        exitGame(senderId);
-        break;
-
-      default:
-        sendInvalidMessage(senderId);
+    var keyword = split[0];
+    var keyword_end = 1;
+    if (split.length >= 2) {
+      var word2 = split[1];
+      if (word2 === "game" || word2 === "games") {
+        keyword_end = 2;
+      }
+    }
+    var remainingSplit = split.slice(keyword_end);
+    var remainingMessage = remainingSplit.join(" ");
+    var valid_prefixes = ["#"];
+    var valid_suffixes = ["-game", "-games"];
+    for (var i = 0; i < valid_prefixes.length; i ++) {
+      var valid_prefix = valid_prefixes[i];
+      if (keyword.startsWith(valid_prefix)) {
+        keyword = keyword.substring(valid_prefix.length);
+      }
+    }
+    for (var j = 0; j < valid_suffixes.length; j ++) {
+      var valid_suffix = valid_suffixes[j];
+      if (keyword.endsWith(valid_suffix)) {
+        keyword = keyword.substring(0, keyword.length - valid_suffix.length);
+      }
+    }
+    if (!switchCases(keyword, remainingMessage)) {
+      sendInvalidMessage(senderId);
     }
   } else if (messageAttachments) {
     sendInvalidMessage(senderId);
   }
+}
+
+function switchCases(keyword, remainingMessage) {
+  switch (keyword) {
+    case 'help':
+      sendHelpMessage(senderId);
+      break;
+
+    case 'create':
+      createGame(senderId);
+      break;
+
+    case 'join':
+      joinGame(senderId, remainingMessage);
+      break;
+
+    case 'list':
+      listGames(senderId);
+      break;
+
+    case 'start':
+      startGame(senderId);
+      break;
+
+    case 'exit':
+      exitGame(senderId);
+      break;
+
+    default:
+      return false;
+  }
+  return true;
 }
 
 function generateCode() {
@@ -191,11 +222,13 @@ function createGame(recipientId) {
 
 function joinGame(recipientId, message) {
   var split = message.split(" ");
-  if (split.length != 2) {
+  if (split.length != 1) {
     sendTextMessage(recipientId, "Invalid syntax. The correct syntax is 'join <code>'");
     return;
   }
-  var code = split[1];
+  var code = split[0];
+  code = code.replace("<", "");
+  code = code.replace(">", "");
   if (code.length != 6) {
     sendTextMessage(recipientId, "Invalid syntax. The code should be a 6 digit number");
     return;
