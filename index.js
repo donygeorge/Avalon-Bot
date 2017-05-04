@@ -196,12 +196,7 @@ function generateCode() {
   return ret.substring(-2);
 }
 
-function createGame(recipientId) {
-  var code = generateCode();
-  createGame(recipientId, code);
-}
-
-function createGame(recipientId, code) {
+function createGame(recipientId, code = generateCode()) {
   resolveName(recipientId, function(recipientString) {
     if (recipientString === null) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
