@@ -211,7 +211,10 @@ function joinGame(recipientId, message) {
         }
         sendTextMessage(recipientId, "Successfully joined the game");
         var recipient = splitIDAndName(recipientString);
-        sendTextMessage(result.rows[0].creator_id, recipient.userName + " joined the game");
+        var creatorID = result.rows[0].creator_id;
+        if (recipientID !== creatorID) {
+          sendTextMessage(creatorID, recipient.userName + " joined the game");
+        }
         pg.end();
       });
     });
@@ -249,7 +252,9 @@ function startGame(recipientId) {
       players = uniqueArray(players);
       console.log("AvalonLog: Starting game, there are %d unique players", players.length);
       if (players.length < 5 || players.length > 10) {
-        sendTextMessage(recipientId, "Avalon needs 5-10 players. There are currently " + players.length + "  players in this game");
+        var verbString = (players.length == 1) ? "is" : "are";
+        var playerString = (players.length == 1) ? "player" : "players";
+        sendTextMessage(recipientId, "Avalon needs 5-10 players. There " + verbString + " currently " + players.length + "  " + playerString + " in this game");
         pg.end();
         return;
       }
