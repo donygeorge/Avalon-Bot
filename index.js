@@ -233,7 +233,8 @@ function startGame(recipientId) {
         pg.end();
         return;
       }
-      console.log("AvalonLog: Starting game, there are %d players", results.rows.count);
+      console.log("AvalonLog: results %@ rows", results, results.rows);
+      console.log("AvalonLog: Starting game, there are %d games", results.rows.count);
       if (results.rows.count === 0) {
         sendTextMessage(recipientId, "Could not find a game to start. Only creators are allowed to start games");
         pg.end();
@@ -244,6 +245,7 @@ function startGame(recipientId) {
       }
       var row = results.rows[0];
       var players = row.players;
+      console.log("AvalonLog: Starting game, there are %d players", players.count);
       players = uniqueArray(players);
       console.log("AvalonLog: Starting game, there are %d unique players", players.count);
       if (players.count < 5 || players.count > 10) {
