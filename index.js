@@ -111,27 +111,27 @@ function receivedMessage(event) {
     var cleanMessageText = messageText.toLowerCase().trim();
     var split = cleanMessageText.split(" ");
     switch (split[0]) {
-      case '#help':
+      case 'help':
         sendHelpMessage(senderId);
         break;
 
-      case '#create':
+      case 'create':
         createGame(senderId);
         break;
 
-      case '#join':
+      case 'join':
         joinGame(senderId, cleanMessageText);
         break;
 
-      case '#list':
+      case 'list':
         listGames(senderId);
         break;
 
-      case '#start':
+      case 'start':
         startGame(senderId);
         break;
 
-      case '#exit':
+      case 'exit':
         exitGame(senderId);
         break;
 
@@ -181,7 +181,7 @@ function createGame(recipientId) {
             pg.end();
             return;
           }
-          sendTextMessage(recipientId, "Successfully created the game. Use code# " + code);
+          sendTextMessage(recipientId, "Successfully created the game. Use code " + code);
           pg.end();
         });
       });
@@ -192,7 +192,7 @@ function createGame(recipientId) {
 function joinGame(recipientId, message) {
   var split = message.split(" ");
   if (split.length != 2) {
-    sendTextMessage(recipientId, "Invalid syntax. The correct syntax is '#join <code>'");
+    sendTextMessage(recipientId, "Invalid syntax. The correct syntax is 'join <code>'");
     return;
   }
   var code = split[1];
@@ -296,7 +296,7 @@ function listGames(recipientId) {
       }
       pg.end();
       var message = "You have 1 active game\n" +
-        "Code#: " + code + "\n" +
+        "Code: " + code + "\n" +
         "Current players: " + nameStringFromPlayers(players);
       sendTextMessage(recipientId, message);
     });
@@ -352,11 +352,11 @@ function queryOwnGames(pg, client, creatorId, callback) {
 
 function sendHelpMessage(recipientId) {
   var message = "Supported options:\n\n" +
-    "#create : Create a new game\n" +
-    "#join <code word> : Join the game with the matching code word\n" +
-    "#start : Start game. Only the creator can start the game\n" +
-    "#list : List all the games you have created that are currently active\n" +
-    "#exit : Exit games that you have created";
+    "create : Create a new game\n" +
+    "join <code word> : Join the game with the matching code word\n" +
+    "start : Start game. Only the creator can start the game\n" +
+    "list : List all the games you have created that are currently active\n" +
+    "exit : Exit games that you have created";
   sendTextMessage(recipientId, message);
 }
 
@@ -443,10 +443,8 @@ function splitIdAndName(combination) {
 
 function playersFromPlayerStrings(playerStrings) {
   var ret = [];
-  console.log("AvalonLog: playerString count %d", playerStrings.length);
   for (var i = 0; i < playerStrings.length; i ++) {
     var playerString = playerStrings[i];
-    console.log("AvalonLog: playerString %s", playerString);
     var player = splitIdAndName(playerString);
     if (player !== null) {
       ret.push(player);
@@ -513,7 +511,8 @@ function setupGame(players)
   if (role_spy !== null) {
     sendTextMessage(role_spy.userId, "The game has started.\n You are 'A Mininon of Mordred'.");
   }
-  for (var spy in roles_known_to_spies) {
+  for (var i = 0; i < roles_known_to_spies.length; i++) {
+    var spy = roles_known_to_spies[i];
     sendTextMessage(spy.userId, "The known spies are " + nameStringFromPlayers(roles_known_to_spies) + ".");
   }
   for (; index < playerCount; index++) {
