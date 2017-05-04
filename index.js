@@ -233,17 +233,17 @@ function startGame(recipientId) {
         pg.end();
         return;
       }
-      console.log("AvalonLog: rows %s", JSON.stringify(results.rows));
-      console.log("AvalonLog: Starting game, there are %d games", results.rows.count);
-      if (results.rows.count === 0) {
+      console.log("AvalonLog: Starting game, there are %d games", results.rowCount);
+      if (results.rowCount === 0) {
         sendTextMessage(recipientId, "Could not find a game to start. Only creators are allowed to start games");
         pg.end();
         return;        
       }
-      if (results.rows.count > 1) {
+      if (results.rowCount > 1) {
         sendTextMessage(recipientId, "You created multiple games. Only the first game would be started");
       }
       var row = results.rows[0];
+      console.log("AvalonLog: row %s", JSON.stringify(row));
       var players = row.players;
       console.log("AvalonLog: Starting game, there are %d players", players.count);
       players = uniqueArray(players);
