@@ -233,7 +233,7 @@ function startGame(recipientId) {
         pg.end();
         return;
       }
-      console.log("AvalonLog: results %@ rows", results, results.rows);
+      console.log("AvalonLog: rows %@ count %d", results.rows, results.rows.count);
       console.log("AvalonLog: Starting game, there are %d games", results.rows.count);
       if (results.rows.count === 0) {
         sendTextMessage(recipientId, "Could not find a game to start. Only creators are allowed to start games");
