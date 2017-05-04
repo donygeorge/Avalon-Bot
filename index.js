@@ -248,8 +248,8 @@ function joinGame(recipientId, message) {
   var code = split[0];
   code = code.replace("<", "");
   code = code.replace(">", "");
-  if (code.length != 6) {
-    sendTextMessage(recipientId, "Invalid syntax. The code should be a 6 digit number");
+  if (code.length != 4) {
+    sendTextMessage(recipientId, "Invalid syntax. The code should be a 4 digit number");
     return;
   }
   joinGameWithCode(recipientId, code); 
