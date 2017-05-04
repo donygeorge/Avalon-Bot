@@ -243,13 +243,13 @@ function startGame(recipientId) {
         sendTextMessage(recipientId, "You created multiple games. Only the first game would be started");
       }
       var row = results.rows[0];
-      console.log("AvalonLog: row %s", JSON.stringify(row));
       var players = row.players;
-      console.log("AvalonLog: Starting game, there are %d players", players.count);
+      console.log("AvalonLog: players %s", JSON.stringify(players));
+      console.log("AvalonLog: Starting game, there are %d players", players.length);
       players = uniqueArray(players);
-      console.log("AvalonLog: Starting game, there are %d unique players", players.count);
-      if (players.count < 5 || players.count > 10) {
-        sendTextMessage(recipientId, "Avalon needs 5-10 players. There are currently " + players.count + "  players in this game");
+      console.log("AvalonLog: Starting game, there are %d unique players", players.length);
+      if (players.length < 5 || players.length > 10) {
+        sendTextMessage(recipientId, "Avalon needs 5-10 players. There are currently " + players.length + "  players in this game");
         pg.end();
         return;
       }
@@ -387,13 +387,13 @@ function splitPlayers(combinedPlayers) {
 }
 
 function nameStringFromPlayers(players) {
-  if (players.count === 0) {
+  if (players.length === 0) {
     // Should not happen
     return null;
   }
   var ret = players[0].userName;
-  for (var i = 1; i < players.count; i ++) {
-    if (i == players.count - 1) {
+  for (var i = 1; i < players.length; i ++) {
+    if (i == players.length - 1) {
       ret += " and";
     } else {
       ret += ",";
@@ -407,7 +407,7 @@ function setupGame(combinedPlayers)
 {
   var players = splitPlayers(combinedPlayers);
   players = shuffleArray(players);
-  var playerCount = players.count;
+  var playerCount = players.length;
   if (playerCount < 5 || playerCount > 10) {
     // Should not happen
     console.log("AvalonLog: Invalid player count %d while setting up the game", playerCount);
