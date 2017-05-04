@@ -8,6 +8,7 @@ const
   request = require('request');
   pg = require('pg');
   uuidGenerator = require('node-uuid');
+  split_literal = ";;/;;";
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -145,22 +146,28 @@ function generateCode() {
 }
 
 function createGame(recipientId) {
-  pg.connect(process.env.DATABASE_URL, function(err, client) {
-    if (err) {
-      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
-      return;
+  resolveName(recipientId, function(recepient) {
+    if (recepient === null) {
+      sendErrorMessage(recipientId, "Failed to resolve user's identity");
+      return;      
     }
-
-    var uuid = uuidGenerator.v4();
-    var code = generateCode();
-    client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientId ]], function (err, result) {
+    pg.connect(process.env.DATABASE_URL, function(err, client) {
       if (err) {
-        sendErrorMessage(recipientId, "Creating game failed with error " + err);
-        pg.end();
+        sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
         return;
       }
-      sendTextMessage(recipientId, "Successfully created the game. Use code# " + code);
-      pg.end();
+
+      var uuid = uuidGenerator.v4();
+      var code = generateCode();
+      client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipient ]], function (err, result) {
+        if (err) {
+          sendErrorMessage(recipientId, "Creating game failed with error " + err);
+          pg.end();
+          return;
+        }
+        sendTextMessage(recipientId, "Successfully created the game. Use code# " + code);
+        pg.end();
+      });
     });
   });
 }
@@ -177,31 +184,35 @@ function joinGame(recipientId, message) {
     return;
   }
 
-  // TODO: Remove
-  resolveName(recipientId);
-  pg.connect(process.env.DATABASE_URL, function(err, client) {
-    if (err) {
-      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
-      return;
+  resolveName(recipientId, function(recepient) {
+    if (recepient === null) {
+      sendErrorMessage(recipientId, "Failed to resolve user's identity");
+      return;      
     }
-    client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recipientId, code], function (err, result) {
+    pg.connect(process.env.DATABASE_URL, function(err, client) {
       if (err) {
-        sendErrorMessage(recipientId, "Joining the game failed with error " + err);
-        pg.end();
+        sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
         return;
       }
-      if (result.rowCount === 0) {
-        sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
+      client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recepient, code], function (err, result) {
+        if (err) {
+          sendErrorMessage(recipientId, "Joining the game failed with error " + err);
+          pg.end();
+          return;
+        }
+        if (result.rowCount === 0) {
+          sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
+          pg.end();
+          return;
+        } else if (result.rowCount > 1) {
+          sendErrorMessage(recipientId, "Something went wrong (Multiple games were found with the same code). Please contact the developer");
+          pg.end();
+          return;
+        }
+        sendTextMessage(recipientId, "Successfully joined the game");
+        sendTextMessage(result.rows[0].creator_id, recipientId + " joined the game");
         pg.end();
-        return;
-      } else if (result.rowCount > 1) {
-        sendErrorMessage(recipientId, "Something went wrong (Multiple games were found with the same code). Please contact the developer");
-        pg.end();
-        return;
-      }
-      sendTextMessage(recipientId, "Successfully joined the game");
-      sendTextMessage(result.rows[0].creator_id, recipientId + " joined the game");
-      pg.end();
+      });
     });
   });
 }
@@ -221,6 +232,7 @@ function startGame(recipientId) {
         pg.end();
         return;
       }
+      console.log("AvalonLog: Starting game, there are %d players", results.rows.count);
       if (results.rows.count === 0) {
         sendTextMessage(recipientId, "Could not find a game to start. Only creators are allowed to start games");
         pg.end();
@@ -231,8 +243,8 @@ function startGame(recipientId) {
       }
       var row = results.rows[0];
       var players = row.players;
-      players.push(recipientId);
       players = uniqueArray(players);
+      console.log("AvalonLog: Starting game, there are %d unique players", players.count);
       if (players.count < 5 || players.count > 10) {
         sendTextMessage(recipientId, "Avalon needs 5-10 players. There are currently " + players.count + "  players in this game");
         pg.end();
@@ -242,6 +254,8 @@ function startGame(recipientId) {
       client.query("DELETE FROM new_games WHERE id = $1;", [row.id], function (err, results) {
         if (err) {
           sendErrorMessage(recipientId, "Cleared started game failed with error " + err);
+        } else {
+          console.log("AvalonLog: Successfuly started and then deleted the game");
         }
         pg.end();
       });
@@ -327,28 +341,73 @@ function callSendAPI(messageData) {
   });
 }
 
-function resolveName(userID) {
+function resolveName(userID, callback) {
   url = "https://graph.facebook.com/v2.6/" + userID + "?fields=first_name,last_name&access_token=" + FB_PAGE_ACCESS_TOKEN;
   request(url, function(error, response, body) {
-    console.log("Logging response %s body %s", response, body);
     if (!error && response.statusCode == 200) {
       var parsedBody = JSON.parse(body);
       var firstName = parsedBody.first_name;
       var lastName = parsedBody.last_name;
       var name = firstName + " " + lastName;
       console.log("Successfully resolved name to %s", name);
+      callback(combineIDAndName(userID, name));
     } else {
       console.error("Failed resolving name", response.statusCode, response.statusMessage, body.error);
+      callback(null);
     }
   });
 }
 
-function setupGame(players)
+function combineIDAndName(userID, name) {
+  // TODO: this is hacky. Split this out into separate columbs
+  return userID + split_literal + name;
+}
+
+function splitIDAndName(combination) {
+  var split = message.split(split_literal);
+  if (split.length != 2) {
+    console.log("AvalonLog: Invalid combination to split: %s op: %s", combination, split);
+    return null;
+  }
+  return {userID : split[0], userName: split[1]};
+}
+
+function splitPlayers(combinedPlayers) {
+  var ret = [];
+  for (var combinedPlayer in combinedPlayers) {
+    var player = splitIDAndName(combinedPlayer);
+    if (player !== null) {
+      ret.push(player);
+    }
+  }
+  return ret;
+}
+
+function nameStringFromPlayers(players) {
+  if (players.count === 0) {
+    // Should not happen
+    return null;
+  }
+  var ret = players[0].userName;
+  for (var i = 1; i < players.count; i ++) {
+    if (i == players.count - 1) {
+      ret += " and";
+    } else {
+      ret += ",";
+    }
+    ret += (" " + players[i].userName);
+  }
+  return ret;
+}
+
+function setupGame(combinedPlayers)
 {
+  var players = splitPlayers(combinedPlayers);
   players = shuffleArray(players);
   var playerCount = players.count;
   if (playerCount < 5 || playerCount > 10) {
     // Should not happen
+    console.log("AvalonLog: Invalid player count %d while setting up the game", playerCount);
     return;
   }
   var index = 0;
@@ -369,22 +428,25 @@ function setupGame(players)
     role_spy = players[index++];
     roles_known_to_spies.push(role_spy);
   }
+  roles_known_to_merlin = shuffleArray(roles_known_to_merlin);
+  roles_known_to_percival = shuffleArray(roles_known_to_percival);
+  roles_known_to_spies = shuffleArray(roles_known_to_spies);
 
-  sendTextMessage(role_merlin, "The game has started.\n You are 'Merlin'.\n The known spies are " + roles_known_to_merlin);
-  sendTextMessage(role_percival, "The game has started.\n You are 'Percival'.\n" + roles_known_to_merlin + " are either 'Merlin' or 'Morgana'");
-  sendTextMessage(role_morgana, "The game has started.\n You are 'Morgana'.");
-  sendTextMessage(role_mordred, "The game has started.\n You are 'Mordred'.");
+  sendTextMessage(role_merlin.userID, "The game has started.\n You are 'Merlin'.\n The known spies are " + nameStringFromPlayers(roles_known_to_merlin) + ".");
+  sendTextMessage(role_percival.userID, "The game has started.\n You are 'Percival'.\n" + nameStringFromPlayers(roles_known_to_percival) + " are either 'Merlin' or 'Morgana'");
+  sendTextMessage(role_morgana.userID, "The game has started.\n You are 'Morgana'.");
+  sendTextMessage(role_mordred.userID, "The game has started.\n You are 'Mordred'.");
   if (role_oberon !== null) {
-    sendTextMessage(role_oberon, "The game has started.\n You are 'Oberon'.");
+    sendTextMessage(role_oberon.userID, "The game has started.\n You are 'Oberon'.");
   }
   if (role_spy !== null) {
-    sendTextMessage(role_spy, "The game has started.\n You are 'A Mininon of Mordred'.");
+    sendTextMessage(role_spy.userID, "The game has started.\n You are 'A Mininon of Mordred'.");
   }
   for (var spy in roles_known_to_spies) {
-    sendTextMessage(spy, "The known spies are " + roles_known_to_spies);
+    sendTextMessage(spy.userID, "The known spies are " + nameStringFromPlayers(roles_known_to_spies) + ".");
   }
   for (; index < playerCount; index++) {
-    sendTextMessage(role_spy, "The game has started.\n You are 'A Loyal Servant of Arthur'.");    
+    sendTextMessage(role_spy.userID, "The game has started.\n You are 'A Loyal Servant of Arthur'.");    
   }
 }
 
