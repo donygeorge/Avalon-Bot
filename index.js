@@ -279,7 +279,7 @@ function joinGameWithCode(recipientId, code) {
         }
         if (result.rowCount === 0) {
           if (code === yolo_code) {
-            sendTextMessage(recipientId, "No 'yolo' game is present. Create a game first");
+            sendTextMessage(recipientId, "No secret game is present. Create a game first.");
           } else {
             sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
           }
