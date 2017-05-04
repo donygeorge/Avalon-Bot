@@ -332,8 +332,9 @@ function resolveName(userID) {
   request(url, function(error, response, body) {
     console.log("Logging response %s body %s", response, body);
     if (!error && response.statusCode == 200) {
-      var firstName = body.first_name;
-      var lastName = body.last_name;
+      var parsedBody = JSON.parse(body);
+      var firstName = parsedBody.first_name;
+      var lastName = parsedBody.last_name;
       var name = firstName + " " + lastName;
       console.log("Successfully resolved name to %s", name);
     } else {
