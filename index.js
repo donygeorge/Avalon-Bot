@@ -9,6 +9,7 @@ const
   pg = require('pg');
   uuidGenerator = require('node-uuid');
   split_literal = ";;/;;";
+  yolo_code = "yolo_code_456";
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -152,6 +153,13 @@ function switchCases(senderId, keyword, remainingMessage) {
       createGame(senderId);
       break;
 
+    case 'create-yolo':
+    case 'createyolo':
+    case 'yolo-create':
+    case 'yolocreate':
+      createGame(senderId, yolo_code);
+      break;
+
     case 'join':
       joinGame(senderId, remainingMessage);
       break;
@@ -181,6 +189,12 @@ function generateCode() {
 }
 
 function createGame(recipientId) {
+  var uuid = uuidGenerator.v4();
+  var code = generateCode();
+  createGame(recipientId, code);
+}
+
+function createGame(recipientId, code) {
   resolveName(recipientId, function(recipientString) {
     if (recipientString === null) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
@@ -204,8 +218,6 @@ function createGame(recipientId) {
           return;
         }
 
-        var uuid = uuidGenerator.v4();
-        var code = generateCode();
         client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientString ]], function (err, result) {
           if (err) {
             sendErrorMessage(recipientId, "Creating game failed with error " + err);
@@ -233,7 +245,10 @@ function joinGame(recipientId, message) {
     sendTextMessage(recipientId, "Invalid syntax. The code should be a 6 digit number");
     return;
   }
+  joinGameWithCode(recipientId, code); 
+}
 
+function joinGameWithCode(recipientId, code) {
   resolveName(recipientId, function(recipientString) {
     if (recipientString === null) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
@@ -251,7 +266,11 @@ function joinGame(recipientId, message) {
           return;
         }
         if (result.rowCount === 0) {
-          sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
+          if (code === yolo_code) {
+            sendTextMessage(recipientId, "No 'yolo' game is present. Create a game first");
+          } else {
+            sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
+          }
           pg.end();
           return;
         } else if (result.rowCount > 1) {
@@ -328,6 +347,9 @@ function listGames(recipientId) {
         return;        
       }
       pg.end();
+      if (code === yolo_code) {
+        code = "<secret-code>";
+      }
       var message = "You have 1 active game\n" +
         "Code: " + code + "\n" +
         "Current players: " + nameStringFromPlayers(players);
@@ -343,8 +365,6 @@ function exitGame(recipientId) {
       return;
     }
 
-    var uuid = uuidGenerator.v4();
-    var code = generateCode();
     client.query("DELETE FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
       if (err) {
         sendErrorMessage(recipientId, "Exiting game failed with error " + err);
