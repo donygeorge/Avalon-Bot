@@ -146,8 +146,8 @@ function generateCode() {
 }
 
 function createGame(recipientId) {
-  resolveName(recipientId, function(recepient) {
-    if (recepient === null) {
+  resolveName(recipientId, function(recipientString) {
+    if (recipientString === null) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
       return;      
     }
@@ -159,7 +159,7 @@ function createGame(recipientId) {
 
       var uuid = uuidGenerator.v4();
       var code = generateCode();
-      client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipient ]], function (err, result) {
+      client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientString ]], function (err, result) {
         if (err) {
           sendErrorMessage(recipientId, "Creating game failed with error " + err);
           pg.end();
@@ -184,8 +184,8 @@ function joinGame(recipientId, message) {
     return;
   }
 
-  resolveName(recipientId, function(recepient) {
-    if (recepient === null) {
+  resolveName(recipientId, function(recipientString) {
+    if (recipientString === null) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
       return;      
     }
@@ -194,7 +194,7 @@ function joinGame(recipientId, message) {
         sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
         return;
       }
-      client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recepient, code], function (err, result) {
+      client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recipientString, code], function (err, result) {
         if (err) {
           sendErrorMessage(recipientId, "Joining the game failed with error " + err);
           pg.end();
@@ -210,7 +210,8 @@ function joinGame(recipientId, message) {
           return;
         }
         sendTextMessage(recipientId, "Successfully joined the game");
-        sendTextMessage(result.rows[0].creator_id, recipientId + " joined the game");
+        var recipient = splitIDAndName(recipientString);
+        sendTextMessage(result.rows[0].creator_id, recipient.userName + " joined the game");
         pg.end();
       });
     });
