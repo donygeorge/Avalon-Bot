@@ -191,7 +191,7 @@ function switchCases(senderId, keyword, remainingMessage) {
 }
 
 function generateCode() {
-  var ret = Math.floor(100000 + Math.random() * 900000);
+  var ret = Math.floor(1000 + Math.random() * 9000);
   ret = ret.toString();
   return ret.substring(-2);
 }
