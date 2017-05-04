@@ -330,6 +330,7 @@ function callSendAPI(messageData) {
 function resolveName(userID) {
   url = "https://graph.facebook.com/v2.6/" + userID + "?fields=first_name,last_name&access_token=" + FB_PAGE_ACCESS_TOKEN;
   request(url, function(error, response, body) {
+    console.log("Logging response %s body %s", response, body);
     if (!error && response.statusCode == 200) {
       var firstName = body.first_name;
       var lastName = body.last_name;
