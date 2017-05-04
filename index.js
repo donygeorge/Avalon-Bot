@@ -328,7 +328,7 @@ function callSendAPI(messageData) {
 }
 
 function resolveName(userID) {
-  url = "https://graph.facebook.com/v2.6/me/messages/" + userID + "?fields=first_name,last_name&access_token=" + FB_PAGE_ACCESS_TOKEN;
+  url = "https://graph.facebook.com/v2.6/" + userID + "?fields=first_name,last_name&access_token=" + FB_PAGE_ACCESS_TOKEN;
   request(url, function(error, response, body) {
     if (!error && response.statusCode == 200) {
       var firstName = body.first_name;
