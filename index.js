@@ -322,7 +322,7 @@ function startGame(recipientId) {
         pg.end();
         return;
       }
-      setupGame(players);
+      setupGame(players, recipientId);
       client.query("DELETE FROM new_games WHERE id = $1;", [row.id], function (err, results) {
         if (err) {
           sendErrorMessage(recipientId, "Cleared started game failed with error " + err);
@@ -530,7 +530,7 @@ function nameStringFromPlayers(players) {
   return ret;
 }
 
-function setupGame(players)
+function setupGame(players, creatorId)
 {
   players = shuffleArray(players);
   var playerCount = players.length;
@@ -561,22 +561,32 @@ function setupGame(players)
   roles_known_to_percival = shuffleArray(roles_known_to_percival);
   roles_known_to_spies = shuffleArray(roles_known_to_spies);
 
-  sendTextMessage(role_merlin.userId, "The game has started.\n You are 'Merlin'.\n The known spies are " + nameStringFromPlayers(roles_known_to_merlin) + ".");
-  sendTextMessage(role_percival.userId, "The game has started.\n You are 'Percival'.\n" + nameStringFromPlayers(roles_known_to_percival) + " are either 'Merlin' or 'Morgana'");
-  sendTextMessage(role_morgana.userId, "The game has started.\n You are 'Morgana'.");
-  sendTextMessage(role_mordred.userId, "The game has started.\n You are 'Mordred'.");
+  var creator_name = null;
+  for (var i = 0; i < players.length; i++) {
+    var player = players[i];
+    if (player.userId === creatorId) {
+      creator_name = player.userName;
+    }
+  }
+
+  var prefix = "The game" + ((creator_name === null) ? "" : (", created by " + creator_name + ",")) + " has started\n";
+
+  sendTextMessage(role_merlin.userId, prefix + "You are 'Merlin'.\n The known spies are " + nameStringFromPlayers(roles_known_to_merlin) + ".");
+  sendTextMessage(role_percival.userId, prefix + "You are 'Percival'.\n" + nameStringFromPlayers(roles_known_to_percival) + " are either 'Merlin' or 'Morgana'");
+  sendTextMessage(role_morgana.userId, prefix + "You are 'Morgana'.");
+  sendTextMessage(role_mordred.userId, prefix + "You are 'Mordred'.");
   if (role_oberon !== null) {
-    sendTextMessage(role_oberon.userId, "The game has started.\n You are 'Oberon'.");
+    sendTextMessage(role_oberon.userId, prefix + "You are 'Oberon'.");
   }
   if (role_spy !== null) {
-    sendTextMessage(role_spy.userId, "The game has started.\n You are 'A Mininon of Mordred'.");
+    sendTextMessage(role_spy.userId, prefix + "You are 'A mininon of Mordred'.");
   }
-  for (var i = 0; i < roles_known_to_spies.length; i++) {
-    var spy = roles_known_to_spies[i];
-    sendTextMessage(spy.userId, "The known spies are " + nameStringFromPlayers(roles_known_to_spies) + ".");
+  for (i = 0; i < roles_known_to_spies.length; i++) {
+    var known_spy = roles_known_to_spies[i];
+    sendTextMessage(known_spy.userId, "The known spies are " + nameStringFromPlayers(roles_known_to_spies) + ".");
   }
   for (; index < playerCount; index++) {
-    sendTextMessage(role_spy.userId, "The game has started.\n You are 'A Loyal Servant of Arthur'.");    
+    sendTextMessage(players[index].userId, prefix + "You are 'A loyal servant of Arthur'.");    
   }
 }
 
