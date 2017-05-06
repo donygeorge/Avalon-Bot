@@ -571,22 +571,22 @@ function setupGame(players, creatorId)
 
   var prefix = "The game" + ((creator_name === null) ? "" : (", created by " + creator_name + ",")) + " has started\n";
 
-  sendTextMessage(role_merlin.userId, prefix + "You are 'Merlin'.\n The known spies are " + nameStringFromPlayers(roles_known_to_merlin) + ".");
-  sendTextMessage(role_percival.userId, prefix + "You are 'Percival'.\n" + nameStringFromPlayers(roles_known_to_percival) + " are either 'Merlin' or 'Morgana'");
-  sendTextMessage(role_morgana.userId, prefix + "You are 'Morgana'.");
-  sendTextMessage(role_mordred.userId, prefix + "You are 'Mordred'.");
+  sendTextMessage(role_merlin.userId, prefix + "Your role is 'Merlin'.\nThe known spies are " + nameStringFromPlayers(roles_known_to_merlin) + ".");
+  sendTextMessage(role_percival.userId, prefix + "Your role is 'Percival'.\n" + nameStringFromPlayers(roles_known_to_percival) + " are either 'Merlin' or 'Morgana'");
+  sendTextMessage(role_morgana.userId, prefix + "Your role is 'Morgana'.");
+  sendTextMessage(role_mordred.userId, prefix + "Your role is 'Mordred'.");
   if (role_oberon !== null) {
-    sendTextMessage(role_oberon.userId, prefix + "You are 'Oberon'.");
+    sendTextMessage(role_oberon.userId, prefix + "Your role is 'Oberon'.");
   }
   if (role_spy !== null) {
-    sendTextMessage(role_spy.userId, prefix + "You are 'A mininon of Mordred'.");
+    sendTextMessage(role_spy.userId, prefix + "Your role is 'A mininon of Mordred'.");
   }
   for (i = 0; i < roles_known_to_spies.length; i++) {
     var known_spy = roles_known_to_spies[i];
-    sendTextMessage(known_spy.userId, "The known spies are " + nameStringFromPlayers(roles_known_to_spies) + ".");
+    sendTextMessage(known_spy.userId, "The spies who know each other are " + nameStringFromPlayers(roles_known_to_spies) + ".");
   }
   for (; index < playerCount; index++) {
-    sendTextMessage(players[index].userId, prefix + "You are 'A loyal servant of Arthur'.");    
+    sendTextMessage(players[index].userId, prefix + "Your role is 'A loyal servant of Arthur'.");
   }
 }
 
