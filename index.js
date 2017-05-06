@@ -177,10 +177,13 @@ function switchCases(senderId, keyword, remainingMessage) {
       break;
 
     case 'start':
+    case 'begin':
       startGame(senderId);
       break;
 
     case 'exit':
+    case 'quit':
+    case 'leave':
       exitGame(senderId);
       break;
 
