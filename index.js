@@ -7,15 +7,16 @@ const
   https = require('https'),
   request = require('request');
   pg = require('pg');
-  uuidGenerator = require('node-uuid');
-  split_literal = ";;/;;";
-  yolo_code = "yolo_code_456";
+  Pool = require('pg');
   pool = new Pool({
     host: process.env.DATABASE_URL,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
     ssl: true,
   });
+  uuidGenerator = require('node-uuid');
+  split_literal = ";;/;;";
+  yolo_code = "yolo_code_456";
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
