@@ -6,7 +6,6 @@ const
   express = require('express'),
   https = require('https'),
   request = require('request');
-  appendQuery = require('append-query');
   uuidGenerator = require('node-uuid');
   split_literal = ";;/;;";
   yolo_code = "yolo_code_456";
@@ -14,7 +13,7 @@ const
 // connection pool
 const { Pool } = require('pg');
 const pool = new Pool({
-    host: appendQuery(process.env.DATABASE_URL, 'sslmode=require'),
+    host: process.env.DATABASE_URL,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
     ssl: true,
