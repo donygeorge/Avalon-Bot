@@ -10,6 +10,12 @@ const
   uuidGenerator = require('node-uuid');
   split_literal = ";;/;;";
   yolo_code = "yolo_code_456";
+  pool = new Pool({
+    host: process.env.DATABASE_URL,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+    ssl: true,
+  });
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -20,7 +26,6 @@ app.use(bodyParser.urlencoded({
 }));
 // Process application/json
 app.use(bodyParser.json());
-pg.defaults.ssl = true;
 
 // Generate a page access token for your page from the App Dashboard
 const FB_PAGE_ACCESS_TOKEN = (process.env.FB_PAGE_ACCESS_TOKEN) ? (process.env.FB_PAGE_ACCESS_TOKEN) : config.get('pageAccessToken');
@@ -205,29 +210,30 @@ function createGame(recipientId, code = generateCode()) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
       return;      
     }
-    pg.connect(process.env.DATABASE_URL, function(err, client) {
+    pool.connect(function(err, client, release) {
       if (err) {
+        release();
         sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
         return;
       }
 
       client.query("SELECT * FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
         if (err) {
+          release();
           sendErrorMessage(recipientId, "Getting the list of active games your created failed with error " + err);
-          pg.end();
           return;
         }
         if (results.rowCount >= 1) {
+          release();
           sendTextMessage(recipientId, "You already have an active game. Use either 'start' or 'exit' to clear that game first before creating a new game");
-          pg.end();
           return;
         }
 
         var uuid = uuidGenerator.v4();
         client.query("INSERT INTO new_games VALUES ($1, $2, $3, $4, current_timestamp);", [uuid, code, recipientId, [ recipientString ]], function (err, result) {
+          release();
           if (err) {
             sendErrorMessage(recipientId, "Creating game failed with error " + err);
-            pg.end();
             return;
           }
           if (code === yolo_code) {
@@ -235,7 +241,6 @@ function createGame(recipientId, code = generateCode()) {
           } else {
             sendTextMessage(recipientId, "Successfully created the game. Use code " + code);
           }
-          pg.end();
         });
       });
     });
@@ -264,99 +269,89 @@ function joinGameWithCode(recipientId, code) {
       sendErrorMessage(recipientId, "Failed to resolve user's identity");
       return;      
     }
-    pg.connect(process.env.DATABASE_URL, function(err, client) {
+    pool.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recipientString, code], function (err, result) {
       if (err) {
-        sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
+        sendErrorMessage(recipientId, "Joining the game failed with error " + err);
         return;
       }
-      client.query("UPDATE new_games SET players = array_append(players,$1) WHERE code = $2 RETURNING *", [recipientString, code], function (err, result) {
-        if (err) {
-          sendErrorMessage(recipientId, "Joining the game failed with error " + err);
-          pg.end();
-          return;
+      if (result.rowCount === 0) {
+        if (code === yolo_code) {
+          sendTextMessage(recipientId, "No secret game is present. Create a game first.");
+        } else {
+          sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
         }
-        if (result.rowCount === 0) {
-          if (code === yolo_code) {
-            sendTextMessage(recipientId, "No secret game is present. Create a game first.");
-          } else {
-            sendTextMessage(recipientId, "A game with the code " + code + " was not found. Are you sure you have the right code?");
-          }
-          pg.end();
-          return;
-        } else if (result.rowCount > 1) {
-          sendErrorMessage(recipientId, "Something went wrong (Multiple games were found with the same code). Please contact the developer");
-          pg.end();
-          return;
-        }
-        sendTextMessage(recipientId, "Successfully joined the game");
-        var recipient = splitIdAndName(recipientString);
-        var creatorId = result.rows[0].creator_id;
-        if (recipientId !== creatorId) {
-          sendTextMessage(creatorId, recipient.userName + " joined the game");
-        }
-        pg.end();
-      });
+        return;
+      } else if (result.rowCount > 1) {
+        sendErrorMessage(recipientId, "Something went wrong (Multiple games were found with the same code). Please contact the developer");
+        return;
+      }
+      sendTextMessage(recipientId, "Successfully joined the game");
+      var recipient = splitIdAndName(recipientString);
+      var creatorId = result.rows[0].creator_id;
+      if (recipientId !== creatorId) {
+        sendTextMessage(creatorId, recipient.userName + " joined the game");
+      }
     });
   });
 }
 
 function startGame(recipientId) {
-  pg.connect(process.env.DATABASE_URL, function(err, client) {
+  pool.connect(function(err, client, release) {
     if (err) {
+      release();
       sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
       return;
     }
 
-    queryOwnGames(pg, client, recipientId, function(code, players) {
+    queryOwnGames(client, recipientId, function(code, players) {
       if (players === null) {
         // queryGames notifies the user about this
-        pg.end();
+        release();
         return;        
       }
       if (players.length === 0) { 
+        release();
         sendTextMessage(recipientId, "You do not have any current active games");
-        pg.end();
         return;        
       }
       if (players.length < 5 || players.length > 10) {
+        release();
         var verbString = (players.length == 1) ? "is" : "are";
         var playerString = (players.length == 1) ? "player" : "players";
         sendTextMessage(recipientId, "Avalon needs 5-10 players. There " + verbString + " currently just " + players.length + "  " + playerString + " in this game");
-        pg.end();
         return;
       }
       setupGame(players, recipientId);
       client.query("DELETE FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
+        release();
         if (err) {
           sendErrorMessage(recipientId, "Cleared started game failed with error " + err);
         } else {
           console.log("AvalonLog: Successfuly started and then deleted the game");
         }
-        pg.end();
       });
     });
   });
 }
 
 function listGames(recipientId) {
-  pg.connect(process.env.DATABASE_URL, function(err, client) {
+  pool.connect(function(err, client, release) {
     if (err) {
+      release();
       sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
       return;
     }
 
-    queryOwnGames(pg, client, recipientId, function(code, players) {
+    queryOwnGames(client, recipientId, function(code, players) {
+      release();
       if (players === null) {
         // queryGames notifies the user about this
-        pg.end();
         return;        
       }
       if (players.length === 0) { 
         sendTextMessage(recipientId, "You do not have any current active games");
-        pg.end();
         return;        
       }
-      pg.end();
       if (code === yolo_code) {
         code = "<secret-code>";
       }
@@ -369,25 +364,16 @@ function listGames(recipientId) {
 }
 
 function exitGame(recipientId) {
-  pg.connect(process.env.DATABASE_URL, function(err, client) {
+  pool.query("DELETE FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
     if (err) {
-      sendErrorMessage(recipientId, "Connecting to the DB failed with error " + err);
+      sendErrorMessage(recipientId, "Exiting game failed with error " + err);
       return;
     }
-
-    client.query("DELETE FROM new_games WHERE creator_id = $1", [recipientId], function (err, results) {
-      if (err) {
-        sendErrorMessage(recipientId, "Exiting game failed with error " + err);
-        pg.end();
-        return;
-      }
-      sendTextMessage(recipientId, "Exited all games that you created");
-      pg.end();
-    });
+    sendTextMessage(recipientId, "Exited all games that you created");
   });
 }
 
-function queryOwnGames(pg, client, creatorId, callback) {
+function queryOwnGames(client, creatorId, callback) {
   client.query("SELECT * FROM new_games WHERE creator_id = $1", [creatorId], function (err, results) {
     if (err) {
       sendErrorMessage(creatorId, "Getting the list of active games your created failed with error " + err);
