@@ -8,16 +8,24 @@ const
   request = require('request');
   uuidGenerator = require('node-uuid');
   split_literal = ";;/;;";
+  url = require('url');
   yolo_code = "yolo_code_456";
 
 // connection pool
 const { Pool } = require('pg');
-const pool = new Pool({
-    host: process.env.DATABASE_URL,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-    ssl: true,
-});
+const params = url.parse(process.env.DATABASE_URL);
+const auth = params.auth.split(':'); 
+const config = {
+  user: auth[0],
+  password: auth[1],
+  host: params.hostname,
+  port: params.port,
+  database: params.pathname.split('/')[1],
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
+  ssl: true
+};
+const pool = new Pool(config);
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
