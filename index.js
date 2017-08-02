@@ -93,9 +93,8 @@ function receivedMessage(event) {
   var timeOfMessage = event.timestamp;
   var message = event.message;
 
-  console.log("Received message for user %d and page %d at %d with message:",
-    senderId, recipientId, timeOfMessage);
-  console.log(JSON.stringify(message));
+  console.log("Received message for user %d and page %d at %d with message: %s",
+    senderId, recipientId, timeOfMessage, JSON.stringify(message));
 
   var isEcho = message.is_echo;
   var messageId = message.mid;
@@ -119,6 +118,7 @@ function receivedMessage(event) {
     return;
   }
 
+  console.log("Message text: %s", messageText);
   if (messageText) {
     // If we receive a text message, check to see if it matches any special
     // keywords and send back the corresponding example. Otherwise, just echo
